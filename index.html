@@ -206,6 +206,68 @@
   .empty{padding:44px 20px;text-align:center;color:var(--faint);font-size:.92rem}
   .file-hidden{display:none}
 
+  /* ---------- Header tools ---------- */
+  header{position:relative}
+  .tools{display:flex;gap:8px;position:absolute;top:2px;right:0}
+  .tool-btn{appearance:none;width:40px;height:40px;border-radius:11px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:.18s}
+  .tool-btn:hover{border-color:var(--green);color:var(--green);transform:translateY(-1px)}
+
+  /* ---------- Collapsible / monthly ---------- */
+  .collapse-btn{appearance:none;width:100%;text-align:left;background:var(--surface-2);border:1.5px solid var(--line);border-radius:11px;padding:12px 15px;font-family:inherit;font-size:.86rem;font-weight:600;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:.18s;margin-top:20px}
+  .collapse-btn:hover{border-color:var(--green);color:var(--green)}
+  .collapse-btn .chev{transition:transform .3s;flex:none}
+  .collapse-btn.open .chev{transform:rotate(180deg)}
+  .collapse-body{display:none;margin-top:12px}
+  .collapse-body.open{display:block;animation:fade .35s}
+  table.months{width:100%;border-collapse:collapse;font-size:.85rem}
+  table.months th{text-align:left;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:8px 10px;border-bottom:1.5px solid var(--line-strong)}
+  table.months th.c,table.months td.c{text-align:right;font-family:'Spline Sans Mono',monospace;white-space:nowrap}
+  table.months td{padding:7px 10px;border-bottom:1px solid var(--line);color:var(--muted)}
+  table.months td small{color:var(--faint)}
+  table.months tr.dec td{background:var(--gold-soft)}
+  table.months tr.tot td{border-top:1.5px solid var(--ink);border-bottom:0;font-weight:700;color:var(--green)}
+  table.months .tg{font-size:.64rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:var(--green-soft);color:var(--green);white-space:nowrap}
+  table.months .tg.p17{background:var(--gold-soft);color:#9a7a2e}
+
+  /* ---------- Pajak Lain ---------- */
+  .opt-list{display:flex;flex-direction:column;gap:8px}
+  .opt{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--line-strong);background:var(--surface-2);border-radius:12px;padding:13px 15px;cursor:pointer;transition:.16s}
+  .opt:hover{border-color:var(--green)}
+  .opt.on{border-color:var(--green);background:var(--green-soft)}
+  .opt .rad{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-strong);margin-top:2px;transition:.16s;position:relative}
+  .opt.on .rad{border-color:var(--green)}
+  .opt.on .rad::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--green)}
+  .opt .tx b{display:block;font-size:.9rem;font-weight:600;color:var(--ink)}
+  .opt .tx span{font-size:.78rem;color:var(--faint);line-height:1.35}
+
+  /* ---------- Dark mode ---------- */
+  body.dark{
+    --paper:#16140F;--surface:#201D16;--surface-2:#27231A;--ink:#EFE9DC;--muted:#A99E8C;--faint:#776D5E;
+    --line:#332E25;--line-strong:#443D31;--green:#43B088;--green-deep:#2D805F;--green-soft:#1C2C24;
+    --gold:#DBA34A;--gold-soft:#2A2316;--red:#DB7860;
+  }
+  body.dark .infobar{border-color:var(--line-strong);color:#d8bf8e}
+  body.dark .badge,body.dark input[type=text],body.dark select{background:var(--surface-2)}
+  body.dark select,body.dark table.roster td .rs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2343B088' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E")}
+  body.dark input[type=text]:focus,body.dark table.roster td .ri:hover,body.dark table.roster td .ri:focus{background:#2d2920}
+  body.dark table.roster .del:hover{background:#3a2420;color:var(--red)}
+
+  /* ---------- Print ---------- */
+  @media print{
+    body{background:#fff}
+    body::before,body::after{display:none}
+    .tabs,.tools,.toolbar,.collapse-btn,footer .legal-grid{display:none!important}
+    .panel{display:none!important}
+    .panel.active{display:block!important}
+    .wrap{max-width:100%;padding:0}
+    .card{box-shadow:none;border-color:#ccc;break-inside:avoid}
+    .result{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .collapse-body{display:block!important}
+    .lede,.badges{display:none}
+    header{margin-bottom:14px}
+    h1{font-size:1.7rem}
+  }
+
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -213,6 +275,10 @@
 <div class="wrap">
 
   <header>
+    <div class="tools">
+      <button class="tool-btn" id="t_theme" title="Mode gelap / terang" aria-label="Ganti tema"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+      <button class="tool-btn" id="t_print" title="Cetak / simpan PDF" aria-label="Cetak"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg></button>
+    </div>
     <span class="eyebrow">Direktorat Pajak · Wajib Pajak Pribadi & UMKM</span>
     <h1>Kalkulator <em>Pajak</em><br>Indonesia.</h1>
     <p class="lede">Hitung PPh 21 karyawan (skema TER terbaru), pajak freelance, PPN, hingga PPh Final UMKM — akurat, lengkap, dan otomatis. Angka berubah seketika saat kamu mengetik.</p>
@@ -229,6 +295,7 @@
     <button class="tab" data-tab="freelance">PPh 21 Freelance<span class="sub">Bukan pegawai</span></button>
     <button class="tab" data-tab="ppn">PPN<span class="sub">Barang & jasa</span></button>
     <button class="tab" data-tab="umkm">PPh Final UMKM<span class="sub">0,5% omzet</span></button>
+    <button class="tab" data-tab="lain">Pajak Lain<span class="sub">PPh 23 · Sewa · 26</span></button>
   </nav>
 
   <!-- ================= KARYAWAN ================= -->
@@ -248,7 +315,7 @@
           <div class="input-money"><span class="rp">Rp</span><input type="text" id="k_thr" inputmode="numeric" value="0"></div>
         </div>
 
-        <div class="field">
+        <div class="field" id="k_iuran_field">
           <label>Iuran pensiun / JHT dibayar sendiri / bulan <span class="hint">(opsional)</span></label>
           <div class="input-money"><span class="rp">Rp</span><input type="text" id="k_iuran" inputmode="numeric" value="0"></div>
         </div>
@@ -264,6 +331,24 @@
             <option value="K/1">K/1 — Kawin, 1 tanggungan</option>
             <option value="K/2">K/2 — Kawin, 2 tanggungan</option>
             <option value="K/3">K/3 — Kawin, 3 tanggungan</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>BPJS <span class="hint">(potongan & iuran)</span></label>
+          <div class="toggle" id="k_bpjs">
+            <div class="tx"><b>Sertakan BPJS</b><span>Kesehatan + Ketenagakerjaan (JHT, JP, JKK, JKM)</span></div>
+            <div class="switch"></div>
+          </div>
+        </div>
+        <div class="field" id="k_jkk_field" style="display:none">
+          <label>Tingkat risiko pekerjaan (JKK)</label>
+          <select id="k_jkk">
+            <option value="0.0024">Sangat rendah — 0,24%</option>
+            <option value="0.0054">Rendah — 0,54%</option>
+            <option value="0.0089">Sedang — 0,89%</option>
+            <option value="0.0127">Tinggi — 1,27%</option>
+            <option value="0.0174">Sangat tinggi — 1,74%</option>
           </select>
         </div>
 
@@ -311,6 +396,36 @@
             <div class="lg-row"><span class="lbl">Penghasilan Kena Pajak</span><span class="val" id="r_pkp">Rp 0</span></div>
             <div id="r_layers"></div>
             <div class="lg-row total"><span class="lbl">PPh 21 setahun</span><span class="val" id="r_pph_thn">Rp 0</span></div>
+          </div>
+
+          <div class="lg-section" id="k_bpjs_section" style="display:none">
+            <h4>BPJS <span class="tag">Iuran</span></h4>
+            <div class="lg-row"><span class="lbl">Kesehatan — karyawan (1%)</span><span class="val" id="b_kes_ee">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">JHT — karyawan (2%)</span><span class="val" id="b_jht_ee">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">JP — karyawan (1%)</span><span class="val" id="b_jp_ee">Rp 0</span></div>
+            <div class="lg-row total"><span class="lbl">Total potongan karyawan</span><span class="val" id="b_ee_total">Rp 0</span></div>
+            <div style="height:8px"></div>
+            <div class="lg-row sub"><span class="lbl">Kesehatan — perusahaan (4%)</span><span class="val" id="b_kes_er">Rp 0</span></div>
+            <div class="lg-row sub"><span class="lbl">JHT — perusahaan (3,7%)</span><span class="val" id="b_jht_er">Rp 0</span></div>
+            <div class="lg-row sub"><span class="lbl">JP — perusahaan (2%)</span><span class="val" id="b_jp_er">Rp 0</span></div>
+            <div class="lg-row sub"><span class="lbl">JKK — perusahaan</span><span class="val" id="b_jkk_er">Rp 0</span></div>
+            <div class="lg-row sub"><span class="lbl">JKM — perusahaan (0,3%)</span><span class="val" id="b_jkm_er">Rp 0</span></div>
+            <div class="lg-row total"><span class="lbl">Total iuran perusahaan</span><span class="val" id="b_er_total">Rp 0</span></div>
+          </div>
+
+          <button class="collapse-btn" id="k_monthly_btn">
+            <span>Rekap 12 bulan (bukti potong 1721-A1)</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="collapse-body" id="k_monthly">
+            <table class="months">
+              <thead><tr><th>Masa Pajak</th><th>Metode</th><th class="c">PPh 21</th></tr></thead>
+              <tbody id="k_months_body"></tbody>
+            </table>
+            <div class="infobar" style="margin-top:12px">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+              <div>Januari–November memakai TER; Desember = PPh setahun − total potongan Jan–Nov. THR/bonus diperhitungkan pada rekonsiliasi Desember. <b>(LB)</b> = lebih bayar yang dikembalikan / dikompensasi.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -528,6 +643,68 @@
     </div>
   </section>
 
+  <!-- ================= PAJAK LAIN ================= -->
+  <section class="panel" id="lain">
+    <div class="grid">
+      <div class="card card-pad">
+        <div class="card-head"><span class="ic">🧮</span> Jenis Pajak</div>
+        <div class="card-note">Pemotongan & pajak final yang sering dipakai badan/usaha: PPh 23, sewa tanah/bangunan, dan PPh 26.</div>
+
+        <div class="field">
+          <div class="opt-list" id="l_opts">
+            <div class="opt on" data-type="pph23-jasa"><div class="rad"></div><div class="tx"><b>PPh 23 — Jasa & Sewa Aset</b><span>2% dari bruto · jasa teknik/manajemen/konsultan, sewa selain tanah-bangunan</span></div></div>
+            <div class="opt" data-type="pph23-dividen"><div class="rad"></div><div class="tx"><b>PPh 23 — Dividen, Bunga, Royalti, Hadiah</b><span>15% dari bruto</span></div></div>
+            <div class="opt" data-type="sewa"><div class="rad"></div><div class="tx"><b>PPh Final — Sewa Tanah & Bangunan</b><span>10% final dari nilai sewa</span></div></div>
+            <div class="opt" data-type="pph26"><div class="rad"></div><div class="tx"><b>PPh 26 — Wajib Pajak Luar Negeri</b><span>20% dari bruto, atau sesuai tax treaty (P3B)</span></div></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label id="l_dpp_label">Jumlah bruto</label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="l_dpp" inputmode="numeric" value="10.000.000"></div>
+        </div>
+
+        <div class="field" id="l_npwp_field">
+          <div class="toggle on" id="l_npwp">
+            <div class="tx"><b>Memiliki NPWP</b><span>Tanpa NPWP, tarif PPh 23 naik 100%</span></div>
+            <div class="switch"></div>
+          </div>
+        </div>
+
+        <div class="infobar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+          <div id="l_note"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card result">
+          <div class="card-pad">
+            <div class="res-label" id="l_reslabel">Pajak Dipotong</div>
+            <div class="res-big" id="l_big">Rp 0</div>
+            <div class="res-sub">
+              <span class="pill gold" id="l_rate_pill">2%</span>
+              <span class="pill" id="l_name_pill">PPh 23</span>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><div class="k">Diterima setelah dipotong</div><div class="v" id="l_net">Rp 0</div></div>
+            <div class="stat"><div class="k">Tarif efektif</div><div class="v" id="l_eff">0%</div></div>
+          </div>
+        </div>
+
+        <div class="card card-pad ledger">
+          <div class="ledger-title">Rincian Perhitungan</div>
+          <div class="lg-section">
+            <div class="lg-row"><span class="lbl" id="lr_basel">Jumlah bruto</span><span class="val" id="lr_bruto">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Tarif</span><span class="val" id="lr_rate">2%</span></div>
+            <div class="lg-row total"><span class="lbl">Pajak terutang</span><span class="val" id="lr_tax">Rp 0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= FOOTER ================= -->
   <footer>
     <div class="legal-grid">
@@ -633,17 +810,32 @@ function animateBig(id, end){
 function calcKaryawan(){
   const gaji=num(document.getElementById('k_gaji'));
   const thr=num(document.getElementById('k_thr'));
-  const iuranBln=num(document.getElementById('k_iuran'));
   const status=document.getElementById('k_ptkp').value;
   const cat=terCat(status), ptkp=PTKP[status];
 
+  let addTaxable=0, iuranBln=0, eePot=0, bp=null;
+  if(kBpjs){
+    const jkk=parseFloat(document.getElementById('k_jkk').value)||0;
+    const baseKes=Math.min(gaji,BPJS.KES_CEIL), baseJp=Math.min(gaji,BPJS.JP_CEIL);
+    const kesEe=baseKes*BPJS.KES_EE, jhtEe=gaji*BPJS.JHT_EE, jpEe=baseJp*BPJS.JP_EE;
+    const kesEr=baseKes*BPJS.KES_ER, jhtEr=gaji*BPJS.JHT_ER, jpEr=baseJp*BPJS.JP_ER, jkkEr=gaji*jkk, jkmEr=gaji*BPJS.JKM;
+    addTaxable=kesEr+jkkEr+jkmEr;   // premi pemberi kerja yg jadi objek pajak
+    iuranBln=jhtEe+jpEe;            // pengurang (THT/pensiun)
+    eePot=kesEe+jhtEe+jpEe;         // total potongan dari take-home
+    bp={kesEe,jhtEe,jpEe,kesEr,jhtEr,jpEr,jkkEr,jkmEr,totalEe:eePot,totalEr:kesEr+jhtEr+jpEr+jkkEr+jkmEr};
+  } else {
+    iuranBln=num(document.getElementById('k_iuran'));
+    eePot=iuranBln;
+  }
+
+  const brutoBln=gaji+addTaxable;
   // Monthly (TER)
-  const rate=terRate(cat, gaji);
-  const pphBln=gaji*rate;
-  const net=gaji-pphBln-iuranBln;
+  const rate=terRate(cat, brutoBln);
+  const pphBln=brutoBln*rate;
+  const net=gaji - eePot - pphBln;
 
   // Annual (Pasal 17)
-  const brutoThn=gaji*12+thr;
+  const brutoThn=brutoBln*12+thr;
   const bijab=Math.min(brutoThn*0.05, 6000000);
   const iuranThn=iuranBln*12;
   const neto=brutoThn-bijab-iuranThn;
@@ -659,7 +851,7 @@ function calcKaryawan(){
   document.getElementById('k_eff').textContent=pct(eff);
   document.getElementById('k_ptkpval').textContent=idr(ptkp);
 
-  document.getElementById('r_bruto_bln').textContent=idr(gaji);
+  document.getElementById('r_bruto_bln').textContent=idr(brutoBln);
   document.getElementById('r_terrate').textContent=`${pct(rate)} (Kategori ${cat})`;
   document.getElementById('r_pph_bln').textContent=idr(pphBln);
   document.getElementById('r_bruto_thn').textContent=idr(brutoThn);
@@ -671,6 +863,9 @@ function calcKaryawan(){
   document.getElementById('r_pkp').textContent=idr(pkp);
   document.getElementById('r_pph_thn').textContent=idr(pphThn);
   renderLayers('r_layers', layers);
+
+  renderBpjs(bp);
+  renderMonths(brutoBln, cat, pphThn);
 }
 
 /* ================= CALC: FREELANCE ================= */
@@ -767,7 +962,7 @@ document.getElementById('u_op').addEventListener('click',function(){
 });
 
 /* ---------- Tabs ---------- */
-const calcMap={karyawan:calcKaryawan, freelance:calcFreelance, ppn:calcPPN, umkm:calcUMKM, roster:()=>recalcTotals()};
+const calcMap={karyawan:calcKaryawan, freelance:calcFreelance, ppn:calcPPN, umkm:calcUMKM, roster:()=>recalcTotals(), lain:calcPajakLain};
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -779,6 +974,84 @@ document.querySelectorAll('.tab').forEach(tab=>{
     calcMap[id]();
   });
 });
+
+/* ========== BPJS + Monthly + Pajak Lain + Theme ========== */
+const BPJS={KES_CEIL:12000000, JP_CEIL:11086300, KES_EE:0.01, KES_ER:0.04, JHT_EE:0.02, JHT_ER:0.037, JP_EE:0.01, JP_ER:0.02, JKM:0.003};
+let kBpjs=false;
+const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November'];
+
+function renderBpjs(bp){
+  const sec=document.getElementById('k_bpjs_section');
+  if(!bp){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  const set=(id,v)=>document.getElementById(id).textContent=idr(v);
+  set('b_kes_ee',bp.kesEe); set('b_jht_ee',bp.jhtEe); set('b_jp_ee',bp.jpEe); set('b_ee_total',bp.totalEe);
+  set('b_kes_er',bp.kesEr); set('b_jht_er',bp.jhtEr); set('b_jp_er',bp.jpEr); set('b_jkk_er',bp.jkkEr); set('b_jkm_er',bp.jkmEr); set('b_er_total',bp.totalEr);
+}
+function renderMonths(brutoBln, cat, annual){
+  const rate=terRate(cat, brutoBln);
+  const monthly=brutoBln*rate;
+  const dec=annual-monthly*11;
+  let rows='';
+  for(let i=0;i<11;i++) rows+=`<tr><td>${MONTHS[i]}</td><td><span class="tg">TER ${cat}</span></td><td class="c">${idr(monthly)}</td></tr>`;
+  const decTxt = dec>=0 ? idr(dec) : '−'+idr(-dec)+' (LB)';
+  rows+=`<tr class="dec"><td>Desember <small>(rekonsiliasi)</small></td><td><span class="tg p17">Pasal 17</span></td><td class="c">${decTxt}</td></tr>`;
+  rows+=`<tr class="tot"><td colspan="2">Total setahun</td><td class="c">${idr(annual)}</td></tr>`;
+  document.getElementById('k_months_body').innerHTML=rows;
+}
+
+/* ----- Pajak Lain ----- */
+let lainType='pph23-jasa';
+function calcPajakLain(){
+  const dpp=num(document.getElementById('l_dpp'));
+  const npwp=document.getElementById('l_npwp').classList.contains('on');
+  let rate=0.02, name='PPh 23', label='Jumlah bruto', reslabel='Pajak Dipotong', note='', mult=1;
+  switch(lainType){
+    case 'pph23-jasa': rate=0.02; name='PPh 23 · Jasa'; if(!npwp)mult=2; note='2% dari jumlah bruto (jasa & sewa selain tanah/bangunan). Tanpa NPWP dikenakan 100% lebih tinggi, menjadi 4%.'; break;
+    case 'pph23-dividen': rate=0.15; name='PPh 23 · Dividen'; if(!npwp)mult=2; note='15% dari jumlah bruto atas dividen, bunga, royalti, dan hadiah. Tanpa NPWP menjadi 30%.'; break;
+    case 'sewa': rate=0.10; name='Sewa (Final)'; label='Nilai sewa'; reslabel='PPh Final Sewa'; note='10% bersifat final atas persewaan tanah dan/atau bangunan (PP 34/2017).'; break;
+    case 'pph26': rate=0.20; name='PPh 26'; note='20% atas penghasilan yang dibayarkan ke Wajib Pajak luar negeri. Tarif dapat lebih rendah sesuai Persetujuan Penghindaran Pajak Berganda (P3B) negara mitra.'; break;
+  }
+  const eff=rate*mult, tax=dpp*eff, net=dpp-tax;
+  animateBig('l_big', tax);
+  document.getElementById('l_rate_pill').textContent=pct(eff);
+  document.getElementById('l_name_pill').textContent=name;
+  document.getElementById('l_net').textContent=idr(net);
+  document.getElementById('l_eff').textContent=pct(eff);
+  document.getElementById('l_reslabel').textContent=reslabel;
+  document.getElementById('l_dpp_label').textContent=label;
+  document.getElementById('lr_basel').textContent=label;
+  document.getElementById('lr_bruto').textContent=idr(dpp);
+  document.getElementById('lr_rate').textContent=pct(eff);
+  document.getElementById('lr_tax').textContent=idr(tax);
+  document.getElementById('l_note').textContent=note;
+}
+
+/* ----- wiring: BPJS / monthly ----- */
+document.getElementById('k_bpjs').addEventListener('click',function(){
+  this.classList.toggle('on'); kBpjs=this.classList.contains('on');
+  document.getElementById('k_jkk_field').style.display=kBpjs?'block':'none';
+  document.getElementById('k_iuran_field').style.display=kBpjs?'none':'block';
+  calcKaryawan();
+});
+document.getElementById('k_jkk').addEventListener('change', calcKaryawan);
+(function(){ const b=document.getElementById('k_monthly_btn'), c=document.getElementById('k_monthly');
+  b.addEventListener('click',()=>{ b.classList.toggle('open'); c.classList.toggle('open'); }); })();
+
+/* ----- wiring: Pajak Lain ----- */
+document.querySelectorAll('#l_opts .opt').forEach(o=>o.addEventListener('click',()=>{
+  document.querySelectorAll('#l_opts .opt').forEach(x=>x.classList.remove('on'));
+  o.classList.add('on'); lainType=o.dataset.type;
+  document.getElementById('l_npwp_field').style.display=lainType.indexOf('pph23')===0?'block':'none';
+  calcPajakLain();
+}));
+document.getElementById('l_npwp').addEventListener('click',function(){ this.classList.toggle('on'); calcPajakLain(); });
+attachCurrency(document.getElementById('l_dpp'), calcPajakLain);
+
+/* ----- wiring: theme + print ----- */
+let theme='light';
+document.getElementById('t_theme').addEventListener('click',()=>{ theme=document.body.classList.toggle('dark')?'dark':'light'; saveState(); });
+document.getElementById('t_print').addEventListener('click',()=>window.print());
 
 /* ========== Persistence + Roster + Excel ========== */
 const KEY='kalkulatorPajakID.v1';
@@ -926,10 +1199,12 @@ function importXlsx(file){
 /* ----- save / load everything ----- */
 function saveState(){
   const ok=safeSet(KEY, JSON.stringify({
-    k:{gaji:gv('k_gaji'),thr:gv('k_thr'),iuran:gv('k_iuran'),ptkp:gv('k_ptkp')},
+    k:{gaji:gv('k_gaji'),thr:gv('k_thr'),iuran:gv('k_iuran'),ptkp:gv('k_ptkp'),bpjs:kBpjs,jkk:gv('k_jkk')},
     f:{bruto:gv('f_bruto')},
     p:{harga:gv('p_harga'),rate:ppnRate,dir:ppnDir},
     u:{omzet:gv('u_omzet'),op:umkmOP},
+    l:{type:lainType,dpp:gv('l_dpp'),npwp:document.getElementById('l_npwp').classList.contains('on')},
+    theme,
     roster
   }));
   const s=document.getElementById('rb_saved'); if(s) s.style.opacity=ok?'1':'.35';
@@ -938,10 +1213,13 @@ function loadState(){
   const raw=safeGet(KEY); if(!raw) return;
   try{
     const s=JSON.parse(raw);
-    if(s.k){ sv('k_gaji',s.k.gaji); sv('k_thr',s.k.thr); sv('k_iuran',s.k.iuran); if(s.k.ptkp)sv('k_ptkp',s.k.ptkp); }
+    if(s.k){ sv('k_gaji',s.k.gaji); sv('k_thr',s.k.thr); sv('k_iuran',s.k.iuran); if(s.k.ptkp)sv('k_ptkp',s.k.ptkp);
+      if(s.k.bpjs){ kBpjs=true; document.getElementById('k_bpjs').classList.add('on'); document.getElementById('k_jkk_field').style.display='block'; document.getElementById('k_iuran_field').style.display='none'; if(s.k.jkk)sv('k_jkk',s.k.jkk); } }
     if(s.f) sv('f_bruto',s.f.bruto);
     if(s.p){ sv('p_harga',s.p.harga); if(s.p.rate){ppnRate=s.p.rate;setSeg('p_mode','rate',ppnRate);} if(s.p.dir){ppnDir=s.p.dir;setSeg('p_dir','dir',ppnDir);} }
     if(s.u){ sv('u_omzet',s.u.omzet); umkmOP=!!s.u.op; document.getElementById('u_op').classList.toggle('on',umkmOP); }
+    if(s.l){ if(s.l.type){ lainType=s.l.type; document.querySelectorAll('#l_opts .opt').forEach(o=>o.classList.toggle('on',o.dataset.type===lainType)); document.getElementById('l_npwp_field').style.display=lainType.indexOf('pph23')===0?'block':'none'; } sv('l_dpp',s.l.dpp); document.getElementById('l_npwp').classList.toggle('on', s.l.npwp!==false); }
+    if(s.theme){ theme=s.theme; document.body.classList.toggle('dark',theme==='dark'); }
     if(Array.isArray(s.roster)) roster=s.roster.map(r=>({nama:r.nama||'',npwp:r.npwp||'',status:PTKP[r.status]?r.status:'TK/0',gaji:+r.gaji||0}));
   }catch(e){}
 }
@@ -952,7 +1230,7 @@ function attachAutoSave(){ ['input','change','click'].forEach(ev=>document.addEv
 /* initial */
 loadState();
 renderRoster();
-calcKaryawan(); calcFreelance(); calcPPN(); calcUMKM();
+calcKaryawan(); calcFreelance(); calcPPN(); calcUMKM(); calcPajakLain();
 attachAutoSave();
 </script>
 </body>
