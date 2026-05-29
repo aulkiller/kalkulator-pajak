@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Pajak Indonesia — Tarif Terbaru</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#F3EDE1;
+    --surface:#FBF8F1;
+    --surface-2:#F7F1E5;
+    --ink:#1B1813;
+    --muted:#776B5B;
+    --faint:#9A8E7C;
+    --line:#E2D8C6;
+    --line-strong:#D2C5AD;
+    --green:#11533C;
+    --green-deep:#0C3E2D;
+    --green-soft:#E4EDE6;
+    --gold:#C2812F;
+    --gold-soft:#F0E2C9;
+    --red:#A23B2C;
+    --shadow:0 1px 2px rgba(27,24,19,.04), 0 10px 30px -12px rgba(27,24,19,.18);
+    --shadow-lg:0 2px 4px rgba(27,24,19,.05), 0 30px 60px -20px rgba(27,24,19,.28);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Hanken Grotesk',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* atmospheric background */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(900px 600px at 82% -8%, rgba(17,83,60,.10), transparent 60%),
+      radial-gradient(700px 520px at -8% 105%, rgba(194,129,47,.12), transparent 60%);
+  }
+  /* grain */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:clamp(24px,4vw,56px) clamp(16px,4vw,40px) 64px}
+
+  /* ---------- Header ---------- */
+  header{margin-bottom:30px;opacity:0;animation:rise .7s .05s cubic-bezier(.2,.7,.2,1) forwards}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--green);font-weight:600;margin-bottom:14px}
+  .eyebrow::before{content:"";width:26px;height:1.5px;background:var(--green);display:inline-block}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(2.3rem,6.5vw,4rem);line-height:.98;letter-spacing:-.02em;font-optical-sizing:auto}
+  h1 em{font-style:italic;color:var(--green);font-weight:500}
+  .lede{margin-top:16px;max-width:54ch;color:var(--muted);font-size:clamp(.98rem,1.4vw,1.08rem)}
+  .badges{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;font-weight:600;padding:6px 13px;border-radius:100px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .badge.live .dot{background:var(--green);box-shadow:0 0 0 0 rgba(17,83,60,.5);animation:pulse 2s infinite}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:30px 0 26px;border-bottom:1.5px solid var(--line);opacity:0;animation:rise .7s .14s cubic-bezier(.2,.7,.2,1) forwards}
+  .tab{position:relative;appearance:none;border:0;background:none;cursor:pointer;font-family:inherit;font-size:.95rem;font-weight:600;color:var(--faint);padding:12px 16px 16px;border-radius:10px 10px 0 0;transition:color .25s;white-space:nowrap}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--green)}
+  .tab::after{content:"";position:absolute;left:14px;right:14px;bottom:-1.5px;height:2.5px;background:var(--green);border-radius:3px;transform:scaleX(0);transform-origin:center;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+  .tab.active::after{transform:scaleX(1)}
+  .tab .sub{display:block;font-size:11px;font-weight:500;color:var(--faint);margin-top:2px;letter-spacing:.01em}
+  .tab.active .sub{color:var(--gold)}
+
+  /* ---------- Panels / grid ---------- */
+  .panel{display:none}
+  .panel.active{display:block;animation:fade .5s cubic-bezier(.2,.7,.2,1)}
+  .grid{display:grid;grid-template-columns:1fr 1.18fr;gap:22px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr;gap:18px}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .card-pad{padding:clamp(20px,3vw,30px)}
+  .card-head{font-family:'Fraunces',serif;font-size:1.28rem;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .card-head .ic{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--green-soft);color:var(--green);flex:none}
+  .card-note{color:var(--muted);font-size:.86rem;margin-bottom:22px}
+
+  /* form */
+  .field{margin-bottom:18px}
+  .field:last-child{margin-bottom:0}
+  label{display:block;font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:7px}
+  label .hint{font-weight:500;color:var(--faint);font-size:.78rem}
+  .input-money{position:relative}
+  .input-money .rp{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--faint);font-weight:600;font-size:.95rem;pointer-events:none}
+  input[type=text]{width:100%;font-family:'Spline Sans Mono',monospace;font-size:1.02rem;font-weight:500;color:var(--ink);background:var(--surface-2);border:1.5px solid var(--line-strong);border-radius:11px;padding:13px 15px 13px 40px;transition:border-color .2s, box-shadow .2s, background .2s;outline:none}
+  input[type=text].plain{padding-left:15px;font-family:'Hanken Grotesk',sans-serif}
+  input[type=text]:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 4px rgba(17,83,60,.10)}
+  select{width:100%;font-family:inherit;font-size:.98rem;font-weight:600;color:var(--ink);background:var(--surface-2);border:1.5px solid var(--line-strong);border-radius:11px;padding:13px 40px 13px 15px;cursor:pointer;outline:none;transition:border-color .2s, box-shadow .2s;
+    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2311533C' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center}
+  select:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(17,83,60,.10)}
+
+  /* segmented control */
+  .seg{display:flex;background:var(--surface-2);border:1.5px solid var(--line-strong);border-radius:12px;padding:4px;gap:4px}
+  .seg button{flex:1;appearance:none;border:0;background:none;font-family:inherit;font-size:.85rem;font-weight:600;color:var(--muted);padding:10px 6px;border-radius:8px;cursor:pointer;transition:.22s;line-height:1.2}
+  .seg button.on{background:var(--green);color:#fff;box-shadow:0 4px 12px -4px rgba(12,62,45,.5)}
+  .seg.gold button.on{background:var(--gold);box-shadow:0 4px 12px -4px rgba(194,129,47,.5)}
+
+  /* toggle row */
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface-2);border:1.5px solid var(--line-strong);border-radius:12px;padding:13px 16px;cursor:pointer;user-select:none}
+  .toggle .tx{font-size:.86rem}
+  .toggle .tx b{display:block;font-weight:600;color:var(--ink)}
+  .toggle .tx span{font-size:.78rem;color:var(--faint)}
+  .switch{flex:none;width:44px;height:25px;border-radius:100px;background:var(--line-strong);position:relative;transition:background .25s}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .25s}
+  .toggle.on .switch{background:var(--green)}
+  .toggle.on .switch::after{transform:translateX(19px)}
+
+  /* ---------- Result card ---------- */
+  .result{background:linear-gradient(160deg,var(--green) 0%, var(--green-deep) 100%);color:#fff;position:relative;border:0}
+  .result::before{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")}
+  .result>*{position:relative;z-index:1}
+  .res-label{font-size:.8rem;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.62);font-weight:600;margin-bottom:8px}
+  .res-big{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(2.3rem,7vw,3.5rem);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .res-sub{margin-top:12px;font-size:.9rem;color:rgba(255,255,255,.8);display:flex;flex-wrap:wrap;gap:7px 14px}
+  .res-sub .pill{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);padding:4px 11px;border-radius:100px;font-weight:600;font-size:.8rem;color:#fff}
+  .res-sub .pill.gold{background:var(--gold);border-color:transparent}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14)}
+  .stat{background:linear-gradient(160deg,rgba(11,57,42,.55),rgba(9,48,35,.55));padding:18px 20px}
+  .stat .k{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:6px}
+  .stat .v{font-family:'Spline Sans Mono',monospace;font-size:1.12rem;font-weight:500;color:#fff;letter-spacing:-.01em}
+  @media(max-width:400px){.stat-grid{grid-template-columns:1fr}}
+
+  /* ledger / rincian */
+  .ledger{margin-top:22px}
+  .ledger-title{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .ledger-title::after{content:"";flex:1;height:1px;background:var(--line)}
+  .lg-section{margin-top:14px}
+  .lg-section h4{font-size:.84rem;font-weight:700;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .lg-section h4 .tag{font-size:.66rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--green);background:var(--green-soft);padding:3px 8px;border-radius:6px}
+  .lg-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
+  .lg-row .lbl{color:var(--muted)}
+  .lg-row .lbl small{color:var(--faint);font-size:.78rem}
+  .lg-row .val{font-family:'Spline Sans Mono',monospace;font-weight:500;color:var(--ink);text-align:right;white-space:nowrap}
+  .lg-row.minus .val{color:var(--red)}
+  .lg-row.total{border-bottom:0;border-top:1.5px solid var(--ink);margin-top:4px;padding-top:11px}
+  .lg-row.total .lbl{color:var(--ink);font-weight:700}
+  .lg-row.total .val{font-weight:600;color:var(--green);font-size:1.02rem}
+  .lg-row.sub .lbl{padding-left:14px;font-size:.84rem}
+
+  .infobar{display:flex;gap:11px;align-items:flex-start;background:var(--gold-soft);border:1px solid #E6D2A8;border-radius:12px;padding:13px 15px;margin-top:18px;font-size:.84rem;color:#6b531f;line-height:1.45}
+  .infobar svg{flex:none;margin-top:1px}
+
+  /* footer */
+  footer{margin-top:46px;padding-top:26px;border-top:1.5px solid var(--line);opacity:0;animation:rise .7s .3s cubic-bezier(.2,.7,.2,1) forwards}
+  .legal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px 26px;margin-bottom:24px}
+  .legal-col h5{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:9px}
+  .legal-col ul{list-style:none;font-size:.83rem;color:var(--muted)}
+  .legal-col li{padding:3px 0;border-bottom:1px dotted var(--line)}
+  .legal-col li b{color:var(--ink);font-weight:600}
+  .disclaimer{font-size:.8rem;color:var(--faint);max-width:70ch;line-height:1.55}
+  .disclaimer b{color:var(--muted)}
+
+  /* anims */
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(17,83,60,.5)}70%{box-shadow:0 0 0 7px rgba(17,83,60,0)}100%{box-shadow:0 0 0 0 rgba(17,83,60,0)}}
+  /* ---------- Roster / table ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+  .btn{appearance:none;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);font-family:inherit;font-size:.86rem;font-weight:600;padding:10px 15px;border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.18s;white-space:nowrap}
+  .btn:hover{border-color:var(--green);color:var(--green);transform:translateY(-1px)}
+  .btn svg{flex:none}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.primary:hover{background:var(--green-deep);color:#fff;border-color:var(--green-deep)}
+  .btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
+  .btn.gold:hover{filter:brightness(.93);color:#fff;border-color:var(--gold)}
+  .btn.ghost{background:none;border-color:transparent;color:var(--muted)}
+  .btn.ghost:hover{background:var(--surface-2);color:var(--ink);transform:none}
+  .toolbar .spacer{flex:1;min-width:0}
+  .saved{font-size:.78rem;color:var(--faint);display:inline-flex;align-items:center;gap:6px;transition:opacity .3s}
+  .saved .d{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(17,83,60,.5);animation:pulse 2.4s infinite}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+  table.roster{width:100%;border-collapse:collapse;min-width:780px;font-size:.88rem}
+  table.roster thead th{background:var(--surface-2);text-align:left;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:13px 12px;border-bottom:1.5px solid var(--line-strong);white-space:nowrap}
+  table.roster thead th.c{text-align:right}
+  table.roster tbody td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.roster tbody tr:last-child td{border-bottom:0}
+  table.roster tbody tr:hover{background:var(--surface-2)}
+  table.roster td.c{text-align:right;font-family:'Spline Sans Mono',monospace;white-space:nowrap;padding-right:14px}
+  table.roster td.c.num{font-weight:500;color:var(--ink)}
+  table.roster td .ri{width:100%;border:1.5px solid transparent;background:transparent;border-radius:8px;font-family:'Hanken Grotesk',sans-serif;font-size:.88rem;font-weight:500;color:var(--ink);padding:8px 9px;outline:none;transition:.15s;min-width:96px}
+  table.roster td .ri:hover{background:#fff;border-color:var(--line)}
+  table.roster td .ri:focus{background:#fff;border-color:var(--green);box-shadow:0 0 0 3px rgba(17,83,60,.10)}
+  table.roster td .rc{font-family:'Spline Sans Mono',monospace;text-align:right;min-width:110px}
+  table.roster td .rs{appearance:none;cursor:pointer;font-weight:600;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%2311533C' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M3.5 5l3.5 3.5L10.5 5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;min-width:84px}
+  table.roster .cat{color:var(--green);font-weight:700}
+  table.roster .del{appearance:none;border:0;background:none;color:var(--faint);cursor:pointer;font-size:.95rem;line-height:1;padding:7px 9px;border-radius:8px;transition:.15s}
+  table.roster .del:hover{background:#F3D9D3;color:var(--red)}
+  table.roster tfoot td{padding:13px 12px;border-top:1.5px solid var(--ink);font-weight:700;background:var(--surface-2)}
+  table.roster tfoot td.c{text-align:right;font-family:'Spline Sans Mono',monospace;color:var(--green);padding-right:14px}
+  .empty{padding:44px 20px;text-align:center;color:var(--faint);font-size:.92rem}
+  .file-hidden{display:none}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Direktorat Pajak · Wajib Pajak Pribadi & UMKM</span>
+    <h1>Kalkulator <em>Pajak</em><br>Indonesia.</h1>
+    <p class="lede">Hitung PPh 21 karyawan (skema TER terbaru), pajak freelance, PPN, hingga PPh Final UMKM — akurat, lengkap, dan otomatis. Angka berubah seketika saat kamu mengetik.</p>
+    <div class="badges">
+      <span class="badge live"><span class="dot"></span>Tarif berlaku 2024–2026</span>
+      <span class="badge"><span class="dot"></span>PP 58/2023 · PMK 168/2023</span>
+      <span class="badge"><span class="dot"></span>PMK 131/2024 · UU HPP</span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="karyawan">PPh 21 Karyawan<span class="sub">Gaji & THR · TER</span></button>
+    <button class="tab" data-tab="roster">Daftar Karyawan<span class="sub">Multi · Coretax</span></button>
+    <button class="tab" data-tab="freelance">PPh 21 Freelance<span class="sub">Bukan pegawai</span></button>
+    <button class="tab" data-tab="ppn">PPN<span class="sub">Barang & jasa</span></button>
+    <button class="tab" data-tab="umkm">PPh Final UMKM<span class="sub">0,5% omzet</span></button>
+  </nav>
+
+  <!-- ================= KARYAWAN ================= -->
+  <section class="panel active" id="karyawan">
+    <div class="grid">
+      <div class="card card-pad">
+        <div class="card-head"><span class="ic">💼</span> Penghasilan</div>
+        <div class="card-note">Untuk pegawai tetap. Masukkan total penghasilan bruto per bulan.</div>
+
+        <div class="field">
+          <label>Gaji + tunjangan / bulan <span class="hint">(bruto)</span></label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="k_gaji" inputmode="numeric" value="10.000.000"></div>
+        </div>
+
+        <div class="field">
+          <label>THR & bonus / tahun <span class="hint">(opsional)</span></label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="k_thr" inputmode="numeric" value="0"></div>
+        </div>
+
+        <div class="field">
+          <label>Iuran pensiun / JHT dibayar sendiri / bulan <span class="hint">(opsional)</span></label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="k_iuran" inputmode="numeric" value="0"></div>
+        </div>
+
+        <div class="field">
+          <label>Status PTKP <span class="hint">(kawin / tanggungan)</span></label>
+          <select id="k_ptkp">
+            <option value="TK/0">TK/0 — Lajang, tanpa tanggungan</option>
+            <option value="TK/1">TK/1 — Lajang, 1 tanggungan</option>
+            <option value="TK/2">TK/2 — Lajang, 2 tanggungan</option>
+            <option value="TK/3">TK/3 — Lajang, 3 tanggungan</option>
+            <option value="K/0">K/0 — Kawin, tanpa tanggungan</option>
+            <option value="K/1">K/1 — Kawin, 1 tanggungan</option>
+            <option value="K/2">K/2 — Kawin, 2 tanggungan</option>
+            <option value="K/3">K/3 — Kawin, 3 tanggungan</option>
+          </select>
+        </div>
+
+        <div class="infobar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+          <div>Skema <b>TER</b> dipakai untuk potongan Januari–November. Bulan Desember dihitung ulang dengan tarif progresif — itulah angka <b>PPh/tahun</b> di samping.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card result">
+          <div class="card-pad">
+            <div class="res-label">Estimasi PPh 21 / bulan (TER)</div>
+            <div class="res-big" id="k_big">Rp 0</div>
+            <div class="res-sub">
+              <span class="pill gold" id="k_ter">TER A · 0%</span>
+              <span class="pill" id="k_kat">Kategori A</span>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><div class="k">Gaji bersih / bulan</div><div class="v" id="k_net">Rp 0</div></div>
+            <div class="stat"><div class="k">PPh 21 / tahun (final)</div><div class="v" id="k_year">Rp 0</div></div>
+            <div class="stat"><div class="k">Tarif efektif / tahun</div><div class="v" id="k_eff">0%</div></div>
+            <div class="stat"><div class="k">PTKP setahun</div><div class="v" id="k_ptkpval">Rp 0</div></div>
+          </div>
+        </div>
+
+        <div class="card card-pad ledger">
+          <div class="ledger-title">Rincian Perhitungan</div>
+
+          <div class="lg-section">
+            <h4>Metode Bulanan <span class="tag">TER</span></h4>
+            <div class="lg-row"><span class="lbl">Penghasilan bruto / bulan</span><span class="val" id="r_bruto_bln">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Tarif efektif (TER)</span><span class="val" id="r_terrate">0%</span></div>
+            <div class="lg-row total"><span class="lbl">PPh 21 / bulan</span><span class="val" id="r_pph_bln">Rp 0</span></div>
+          </div>
+
+          <div class="lg-section">
+            <h4>Metode Tahunan <span class="tag">Pasal 17</span></h4>
+            <div class="lg-row"><span class="lbl">Penghasilan bruto setahun</span><span class="val" id="r_bruto_thn">Rp 0</span></div>
+            <div class="lg-row minus"><span class="lbl">Biaya jabatan <small>(5%, maks 6 jt)</small></span><span class="val" id="r_bijab">Rp 0</span></div>
+            <div class="lg-row minus"><span class="lbl">Iuran pensiun / JHT</span><span class="val" id="r_iuran">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Penghasilan neto</span><span class="val" id="r_neto">Rp 0</span></div>
+            <div class="lg-row minus"><span class="lbl">PTKP <small id="r_ptkp_status">(TK/0)</small></span><span class="val" id="r_ptkp">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Penghasilan Kena Pajak</span><span class="val" id="r_pkp">Rp 0</span></div>
+            <div id="r_layers"></div>
+            <div class="lg-row total"><span class="lbl">PPh 21 setahun</span><span class="val" id="r_pph_thn">Rp 0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FREELANCE ================= -->
+  <section class="panel" id="freelance">
+    <div class="grid">
+      <div class="card card-pad">
+        <div class="card-head"><span class="ic">🧾</span> Imbalan</div>
+        <div class="card-note">Untuk bukan pegawai (tenaga ahli, konsultan, pekerja lepas). DPP = 50% × bruto.</div>
+
+        <div class="field">
+          <label>Imbalan bruto diterima</label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="f_bruto" inputmode="numeric" value="100.000.000"></div>
+        </div>
+
+        <div class="infobar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+          <div>Dasar Pengenaan Pajak bukan pegawai = <b>50%</b> dari bruto, lalu dikenai tarif progresif Pasal 17 (PMK 168/2023). Untuk penghasilan berkesinambungan, perhitungan dilakukan kumulatif.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card result">
+          <div class="card-pad">
+            <div class="res-label">Estimasi PPh 21 Terutang</div>
+            <div class="res-big" id="f_big">Rp 0</div>
+            <div class="res-sub">
+              <span class="pill gold" id="f_rate">Tarif efektif 0%</span>
+              <span class="pill" id="f_dpp_pill">DPP Rp 0</span>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><div class="k">Imbalan bersih diterima</div><div class="v" id="f_net">Rp 0</div></div>
+            <div class="stat"><div class="k">Dasar Pengenaan (50%)</div><div class="v" id="f_dpp">Rp 0</div></div>
+          </div>
+        </div>
+
+        <div class="card card-pad ledger">
+          <div class="ledger-title">Rincian Perhitungan</div>
+          <div class="lg-section">
+            <div class="lg-row"><span class="lbl">Imbalan bruto</span><span class="val" id="fr_bruto">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">DPP = 50% × bruto</span><span class="val" id="fr_dpp">Rp 0</span></div>
+            <div id="f_layers"></div>
+            <div class="lg-row total"><span class="lbl">PPh 21 terutang</span><span class="val" id="fr_pph">Rp 0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PPN ================= -->
+  <section class="panel" id="ppn">
+    <div class="grid">
+      <div class="card card-pad">
+        <div class="card-head"><span class="ic">🛍️</span> Transaksi</div>
+        <div class="card-note">Hitung Pajak Pertambahan Nilai atas barang atau jasa.</div>
+
+        <div class="field">
+          <label>Jenis barang / jasa</label>
+          <div class="seg" id="p_mode">
+            <button class="on" data-rate="0.11">Umum · 11%</button>
+            <button data-rate="0.12">Mewah · 12%</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Harga yang kamu masukkan</label>
+          <div class="seg gold" id="p_dir">
+            <button class="on" data-dir="excl">Belum termasuk PPN</button>
+            <button data-dir="incl">Sudah termasuk PPN</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label id="p_price_label">Harga jual (DPP)</label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="p_harga" inputmode="numeric" value="1.000.000"></div>
+        </div>
+
+        <div class="infobar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+          <div>Sejak 2025 tarif PPN <b>12%</b> hanya untuk barang/jasa mewah. Barang umum bertarif efektif <b>11%</b> (mekanisme DPP nilai lain 11/12). Kebutuhan pokok tetap bebas PPN.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card result">
+          <div class="card-pad">
+            <div class="res-label">PPN Terutang</div>
+            <div class="res-big" id="p_big">Rp 0</div>
+            <div class="res-sub">
+              <span class="pill gold" id="p_rate_pill">Tarif 11%</span>
+              <span class="pill" id="p_type_pill">Barang umum</span>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><div class="k">Dasar Pengenaan Pajak</div><div class="v" id="p_dpp">Rp 0</div></div>
+            <div class="stat"><div class="k">Total harga + PPN</div><div class="v" id="p_total">Rp 0</div></div>
+          </div>
+        </div>
+
+        <div class="card card-pad ledger">
+          <div class="ledger-title">Rincian Perhitungan</div>
+          <div class="lg-section">
+            <div class="lg-row"><span class="lbl" id="pr_l1">Harga jual (DPP)</span><span class="val" id="pr_dpp">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Tarif PPN</span><span class="val" id="pr_rate">11%</span></div>
+            <div class="lg-row"><span class="lbl">PPN = tarif × DPP</span><span class="val" id="pr_ppn">Rp 0</span></div>
+            <div class="lg-row total"><span class="lbl">Harga akhir</span><span class="val" id="pr_total">Rp 0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= UMKM ================= -->
+  <section class="panel" id="umkm">
+    <div class="grid">
+      <div class="card card-pad">
+        <div class="card-head"><span class="ic">🏪</span> Omzet Usaha</div>
+        <div class="card-note">PPh Final 0,5% untuk UMKM dengan omzet ≤ Rp 4,8 miliar / tahun (PP 55/2022).</div>
+
+        <div class="field">
+          <label>Omzet / peredaran bruto per bulan</label>
+          <div class="input-money"><span class="rp">Rp</span><input type="text" id="u_omzet" inputmode="numeric" value="50.000.000"></div>
+        </div>
+
+        <div class="field">
+          <label>Status wajib pajak</label>
+          <div class="toggle on" id="u_op">
+            <div class="tx"><b>Orang Pribadi</b><span>Omzet pertama Rp 500 juta/tahun bebas pajak</span></div>
+            <div class="switch"></div>
+          </div>
+        </div>
+
+        <div class="infobar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+          <div>Bagi WP <b>Orang Pribadi</b>, peredaran bruto sampai <b>Rp 500 juta</b> setahun tidak kena pajak. Tarif final 0,5% hanya berlaku selama batas waktu tertentu sejak terdaftar.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card result">
+          <div class="card-pad">
+            <div class="res-label">PPh Final / bulan</div>
+            <div class="res-big" id="u_big">Rp 0</div>
+            <div class="res-sub">
+              <span class="pill gold">Tarif final 0,5%</span>
+              <span class="pill" id="u_status_pill">Orang Pribadi</span>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><div class="k">PPh Final / tahun</div><div class="v" id="u_year">Rp 0</div></div>
+            <div class="stat"><div class="k">Omzet bruto / tahun</div><div class="v" id="u_omzetyear">Rp 0</div></div>
+          </div>
+        </div>
+
+        <div class="card card-pad ledger">
+          <div class="ledger-title">Rincian Perhitungan</div>
+          <div class="lg-section">
+            <div class="lg-row"><span class="lbl">Omzet bruto setahun</span><span class="val" id="ur_omzet">Rp 0</span></div>
+            <div class="lg-row minus" id="ur_exrow"><span class="lbl">Pengurang (bebas pajak)</span><span class="val" id="ur_ex">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Omzet kena pajak</span><span class="val" id="ur_kena">Rp 0</span></div>
+            <div class="lg-row"><span class="lbl">Tarif final</span><span class="val">0,5%</span></div>
+            <div class="lg-row total"><span class="lbl">PPh Final setahun</span><span class="val" id="ur_pph">Rp 0</span></div>
+          </div>
+          <div class="infobar" id="u_warn" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><path d="M8 1.8 1.3 13.3h13.4z" stroke-linejoin="round"/><path d="M8 6.4v3.2M8 11.4h0" stroke-linecap="round"/></svg>
+            <div>Omzet melebihi <b>Rp 4,8 miliar/tahun</b> — skema PPh Final 0,5% tidak lagi berlaku. Perhitungan beralih ke tarif PPh umum (pembukuan).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ROSTER ================= -->
+  <section class="panel" id="roster">
+    <div class="card card-pad">
+      <div class="card-head"><span class="ic">📋</span> Daftar Karyawan — Rekap PPh 21</div>
+      <div class="card-note">Hitung PPh 21 banyak karyawan sekaligus untuk persiapan SPT Masa / unggah massal Coretax. Kolom <b>PPh/Tahun</b> setara nilai bukti potong 1721-A1. Data tersimpan otomatis di browser ini.</div>
+
+      <div class="toolbar">
+        <button class="btn primary" id="rb_add"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Tambah karyawan</button>
+        <button class="btn gold" id="rb_export"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5v8M5 6l3 3 3-3M2.5 11v2.5h11V11"/></svg>Ekspor Excel</button>
+        <button class="btn" id="rb_import"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9.5v-8M5 4.5l3-3 3 3M2.5 11v2.5h11V11"/></svg>Impor Excel</button>
+        <button class="btn ghost" id="rb_tpl">Unduh template</button>
+        <input type="file" id="rb_file" class="file-hidden" accept=".xlsx,.xls,.csv">
+        <span class="spacer"></span>
+        <span class="saved" id="rb_saved"><span class="d"></span>Tersimpan otomatis</span>
+        <button class="btn ghost" id="rb_clear" title="Hapus semua data">Hapus semua</button>
+      </div>
+
+      <div class="table-scroll">
+        <table class="roster" id="r_table">
+          <thead><tr>
+            <th>Nama</th><th>NPWP / NIK</th><th>Status</th>
+            <th class="c">Bruto / Bln</th><th class="c">TER</th><th class="c">Tarif</th>
+            <th class="c">PPh / Bln</th><th class="c">PPh / Tahun</th><th></th>
+          </tr></thead>
+          <tbody id="r_body"></tbody>
+          <tfoot><tr>
+            <td colspan="3">Total · <span id="r_count">0</span> karyawan</td>
+            <td class="c" id="t_bruto">Rp 0</td><td></td><td></td>
+            <td class="c" id="t_pphb">Rp 0</td><td class="c" id="t_pphy">Rp 0</td><td></td>
+          </tr></tfoot>
+        </table>
+        <div class="empty" id="r_empty">Belum ada data. Klik <b>Tambah karyawan</b> atau <b>Impor Excel</b> untuk memulai.</div>
+      </div>
+
+      <div class="infobar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9a7a2e" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8h0" stroke-linecap="round"/></svg>
+        <div>Rekap memakai gaji bruto bulanan rutin (tanpa THR/bonus; biaya jabatan 5% maks Rp 6 jt/th). Untuk satu orang dengan THR, iuran, atau bonus, pakai tab <b>PPh 21 Karyawan</b>. Format impor: kolom <b>Nama</b>, <b>NPWP/NIK</b>, <b>Status PTKP</b>, <b>Penghasilan Bruto/Bulan</b>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="legal-grid">
+      <div class="legal-col">
+        <h5>PTKP Setahun</h5>
+        <ul>
+          <li>TK/0 <b>Rp 54.000.000</b></li>
+          <li>TK/1 · K/0 <b>Rp 58.500.000</b></li>
+          <li>TK/2 · K/1 <b>Rp 63.000.000</b></li>
+          <li>TK/3 · K/2 <b>Rp 67.500.000</b></li>
+          <li>K/3 <b>Rp 72.000.000</b></li>
+        </ul>
+      </div>
+      <div class="legal-col">
+        <h5>Tarif Progresif PPh (Pasal 17)</h5>
+        <ul>
+          <li>s.d. 60 jt <b>5%</b></li>
+          <li>60 – 250 jt <b>15%</b></li>
+          <li>250 – 500 jt <b>25%</b></li>
+          <li>500 jt – 5 M <b>30%</b></li>
+          <li>di atas 5 M <b>35%</b></li>
+        </ul>
+      </div>
+      <div class="legal-col">
+        <h5>Dasar Hukum</h5>
+        <ul>
+          <li>UU 7/2021 <b>HPP</b></li>
+          <li>PP 58/2023 <b>Tarif TER</b></li>
+          <li>PMK 168/2023 <b>Juklak PPh 21</b></li>
+          <li>PMK 131/2024 <b>PPN</b></li>
+          <li>PP 55/2022 <b>UMKM final</b></li>
+        </ul>
+      </div>
+    </div>
+    <p class="disclaimer"><b>Catatan:</b> Kalkulator ini memberikan estimasi berdasarkan tarif yang berlaku 2024–2026 dan tidak memperhitungkan seluruh keadaan khusus (mis. zakat via pemberi kerja, penghasilan tidak teratur tertentu, atau status K/I dengan penghasilan istri digabung). Ini bukan nasihat perpajakan resmi — untuk keputusan dan pelaporan, verifikasikan dengan konsultan pajak atau DJP melalui pajak.go.id.</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Format helpers ---------- */
+const idr = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const num = el => parseInt((el.value||'').replace(/\D/g,'')) || 0;
+const pct = r => {
+  const v = r*100;
+  return (Number.isInteger(v) ? v : v.toFixed(2).replace(/\.?0+$/,'')).toString().replace('.',',') + '%';
+};
+
+/* ---------- Data: PTKP ---------- */
+const PTKP = {'TK/0':54e6,'TK/1':58.5e6,'TK/2':63e6,'TK/3':67.5e6,'K/0':58.5e6,'K/1':63e6,'K/2':67.5e6,'K/3':72e6};
+const terCat = s => (['TK/0','TK/1','K/0'].includes(s)?'A':(['TK/2','TK/3','K/1','K/2'].includes(s)?'B':'C'));
+
+/* ---------- Data: TER tables (PP 58/2023). [upperBound, rate] ---------- */
+const TER = {
+  A:[[5400000,0],[5650000,.0025],[5950000,.005],[6300000,.0075],[6750000,.01],[7500000,.0125],[8550000,.015],[9650000,.0175],[10050000,.02],[10350000,.0225],[10700000,.025],[11050000,.03],[11600000,.035],[12500000,.04],[13750000,.05],[15100000,.06],[16950000,.07],[19750000,.08],[24150000,.09],[26450000,.10],[28000000,.11],[30050000,.12],[32400000,.13],[35400000,.14],[39100000,.15],[43850000,.16],[47800000,.17],[51400000,.18],[56300000,.19],[62200000,.20],[68600000,.21],[77500000,.22],[89000000,.23],[103000000,.24],[125000000,.25],[157000000,.26],[206000000,.27],[337000000,.28],[454000000,.29],[550000000,.30],[695000000,.31],[910000000,.32],[1400000000,.33],[Infinity,.34]],
+  B:[[6200000,0],[6500000,.0025],[6850000,.005],[7300000,.0075],[9200000,.01],[10750000,.015],[11250000,.02],[11600000,.025],[12600000,.03],[13600000,.04],[14950000,.05],[16400000,.06],[18450000,.07],[21850000,.08],[26000000,.09],[27700000,.10],[29350000,.11],[31450000,.12],[33950000,.13],[37100000,.14],[41100000,.15],[45800000,.16],[49500000,.17],[53800000,.18],[58500000,.19],[64000000,.20],[71000000,.21],[80000000,.22],[93000000,.23],[109000000,.24],[129000000,.25],[163000000,.26],[211000000,.27],[374000000,.28],[459000000,.29],[555000000,.30],[704000000,.31],[957000000,.32],[1405000000,.33],[Infinity,.34]],
+  C:[[6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000,.01],[9800000,.0125],[10950000,.015],[11200000,.0175],[12050000,.02],[12950000,.03],[14150000,.04],[15550000,.05],[17050000,.06],[19500000,.07],[22700000,.08],[26600000,.09],[28100000,.10],[30100000,.11],[32600000,.12],[35400000,.13],[38900000,.14],[43000000,.15],[47400000,.16],[51200000,.17],[55800000,.18],[60400000,.19],[66700000,.20],[74500000,.21],[83200000,.22],[95600000,.23],[110000000,.24],[134000000,.25],[169000000,.26],[221000000,.27],[390000000,.28],[463000000,.29],[561000000,.30],[709000000,.31],[965000000,.32],[1419000000,.33],[Infinity,.34]]
+};
+function terRate(cat, bruto){
+  for(const [up,r] of TER[cat]){ if(bruto<=up) return r; }
+  return .34;
+}
+
+/* ---------- Progressive Pasal 17 (returns {tax, layers[]}) ---------- */
+const P17 = [[60000000,.05],[250000000,.15],[500000000,.25],[5000000000,.30],[Infinity,.35]];
+function progressive(pkp){
+  let p = Math.floor(Math.max(0,pkp)/1000)*1000;
+  let tax=0, lower=0; const layers=[];
+  for(const [up,rate] of P17){
+    if(p<=lower) break;
+    const base = Math.min(p,up)-lower;
+    const amt = base*rate;
+    tax+=amt; layers.push({rate, base, amt});
+    lower=up;
+  }
+  return {tax, layers};
+}
+function renderLayers(targetId, layers){
+  const t=document.getElementById(targetId);
+  t.innerHTML = layers.map(l=>
+    `<div class="lg-row sub"><span class="lbl">${pct(l.rate)} × ${idr(l.base)}</span><span class="val">${idr(l.amt)}</span></div>`
+  ).join('');
+}
+
+/* ---------- Count-up animation for headline ---------- */
+const lastVal = {};
+function animateBig(id, end){
+  const el=document.getElementById(id);
+  const start = lastVal[id]||0; lastVal[id]=end;
+  if(Math.abs(end-start)<1){ el.textContent=idr(end); return; }
+  const dur=520, t0=performance.now();
+  function step(now){
+    const p=Math.min(1,(now-t0)/dur);
+    const e=1-Math.pow(1-p,3);
+    el.textContent=idr(start+(end-start)*e);
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ================= CALC: KARYAWAN ================= */
+function calcKaryawan(){
+  const gaji=num(document.getElementById('k_gaji'));
+  const thr=num(document.getElementById('k_thr'));
+  const iuranBln=num(document.getElementById('k_iuran'));
+  const status=document.getElementById('k_ptkp').value;
+  const cat=terCat(status), ptkp=PTKP[status];
+
+  // Monthly (TER)
+  const rate=terRate(cat, gaji);
+  const pphBln=gaji*rate;
+  const net=gaji-pphBln-iuranBln;
+
+  // Annual (Pasal 17)
+  const brutoThn=gaji*12+thr;
+  const bijab=Math.min(brutoThn*0.05, 6000000);
+  const iuranThn=iuranBln*12;
+  const neto=brutoThn-bijab-iuranThn;
+  const pkp=Math.max(0, Math.floor((neto-ptkp)/1000)*1000);
+  const {tax:pphThn, layers}=progressive(pkp);
+  const eff=brutoThn>0 ? pphThn/brutoThn : 0;
+
+  animateBig('k_big', pphBln);
+  document.getElementById('k_ter').textContent=`TER ${cat} · ${pct(rate)}`;
+  document.getElementById('k_kat').textContent=`Status ${status}`;
+  document.getElementById('k_net').textContent=idr(net);
+  document.getElementById('k_year').textContent=idr(pphThn);
+  document.getElementById('k_eff').textContent=pct(eff);
+  document.getElementById('k_ptkpval').textContent=idr(ptkp);
+
+  document.getElementById('r_bruto_bln').textContent=idr(gaji);
+  document.getElementById('r_terrate').textContent=`${pct(rate)} (Kategori ${cat})`;
+  document.getElementById('r_pph_bln').textContent=idr(pphBln);
+  document.getElementById('r_bruto_thn').textContent=idr(brutoThn);
+  document.getElementById('r_bijab').textContent='– '+idr(bijab);
+  document.getElementById('r_iuran').textContent='– '+idr(iuranThn);
+  document.getElementById('r_neto').textContent=idr(neto);
+  document.getElementById('r_ptkp_status').textContent=`(${status})`;
+  document.getElementById('r_ptkp').textContent='– '+idr(ptkp);
+  document.getElementById('r_pkp').textContent=idr(pkp);
+  document.getElementById('r_pph_thn').textContent=idr(pphThn);
+  renderLayers('r_layers', layers);
+}
+
+/* ================= CALC: FREELANCE ================= */
+function calcFreelance(){
+  const bruto=num(document.getElementById('f_bruto'));
+  const dpp=bruto*0.5;
+  const {tax, layers}=progressive(dpp);
+  const eff=bruto>0?tax/bruto:0;
+
+  animateBig('f_big', tax);
+  document.getElementById('f_rate').textContent=`Tarif efektif ${pct(eff)}`;
+  document.getElementById('f_dpp_pill').textContent='DPP '+idr(dpp);
+  document.getElementById('f_net').textContent=idr(bruto-tax);
+  document.getElementById('f_dpp').textContent=idr(dpp);
+  document.getElementById('fr_bruto').textContent=idr(bruto);
+  document.getElementById('fr_dpp').textContent=idr(dpp);
+  document.getElementById('fr_pph').textContent=idr(tax);
+  renderLayers('f_layers', layers);
+}
+
+/* ================= CALC: PPN ================= */
+let ppnRate=0.11, ppnDir='excl';
+function calcPPN(){
+  const harga=num(document.getElementById('p_harga'));
+  let dpp, ppn, total;
+  if(ppnDir==='excl'){ dpp=harga; ppn=dpp*ppnRate; total=dpp+ppn; }
+  else { dpp=harga/(1+ppnRate); ppn=harga-dpp; total=harga; }
+  const luxury = ppnRate===0.12;
+
+  animateBig('p_big', ppn);
+  document.getElementById('p_rate_pill').textContent='Tarif '+pct(ppnRate);
+  document.getElementById('p_type_pill').textContent= luxury?'Barang mewah':'Barang umum';
+  document.getElementById('p_dpp').textContent=idr(dpp);
+  document.getElementById('p_total').textContent=idr(total);
+  document.getElementById('pr_dpp').textContent=idr(dpp);
+  document.getElementById('pr_rate').textContent=pct(ppnRate);
+  document.getElementById('pr_ppn').textContent=idr(ppn);
+  document.getElementById('pr_total').textContent=idr(total);
+
+  const lbl = ppnDir==='excl' ? 'Harga jual (DPP)' : 'Harga termasuk PPN';
+  document.getElementById('p_price_label').textContent=lbl;
+  document.getElementById('pr_l1').textContent= ppnDir==='excl' ? 'Harga jual (DPP)' : 'DPP (harga ÷ '+(1+ppnRate).toString().replace('.',',')+')';
+}
+
+/* ================= CALC: UMKM ================= */
+let umkmOP=true;
+function calcUMKM(){
+  const omzetBln=num(document.getElementById('u_omzet'));
+  const omzetThn=omzetBln*12;
+  const ex = umkmOP ? Math.min(500000000, omzetThn) : 0;
+  const kena=Math.max(0, omzetThn-ex);
+  const pphThn=kena*0.005;
+  const pphBln=pphThn/12;
+  const over = omzetThn>4800000000;
+
+  animateBig('u_big', pphBln);
+  document.getElementById('u_status_pill').textContent= umkmOP?'Orang Pribadi':'Badan';
+  document.getElementById('u_year').textContent=idr(pphThn);
+  document.getElementById('u_omzetyear').textContent=idr(omzetThn);
+  document.getElementById('ur_omzet').textContent=idr(omzetThn);
+  document.getElementById('ur_ex').textContent='– '+idr(ex);
+  document.getElementById('ur_exrow').style.display = umkmOP ? 'flex' : 'none';
+  document.getElementById('ur_kena').textContent=idr(kena);
+  document.getElementById('ur_pph').textContent=idr(pphThn);
+  document.getElementById('u_warn').style.display = over ? 'flex' : 'none';
+}
+
+/* ---------- Currency input formatting ---------- */
+function attachCurrency(el, fn){
+  el.addEventListener('input', ()=>{
+    const raw=el.value.replace(/\D/g,'');
+    el.value = raw ? parseInt(raw).toLocaleString('id-ID') : '';
+    fn();
+  });
+}
+['k_gaji','k_thr','k_iuran'].forEach(id=>attachCurrency(document.getElementById(id), calcKaryawan));
+document.getElementById('k_ptkp').addEventListener('change', calcKaryawan);
+attachCurrency(document.getElementById('f_bruto'), calcFreelance);
+attachCurrency(document.getElementById('p_harga'), calcPPN);
+attachCurrency(document.getElementById('u_omzet'), calcUMKM);
+
+/* segmented controls */
+document.querySelectorAll('#p_mode button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#p_mode button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); ppnRate=parseFloat(b.dataset.rate); calcPPN();
+}));
+document.querySelectorAll('#p_dir button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#p_dir button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); ppnDir=b.dataset.dir; calcPPN();
+}));
+/* UMKM toggle */
+document.getElementById('u_op').addEventListener('click',function(){
+  this.classList.toggle('on'); umkmOP=this.classList.contains('on'); calcUMKM();
+});
+
+/* ---------- Tabs ---------- */
+const calcMap={karyawan:calcKaryawan, freelance:calcFreelance, ppn:calcPPN, umkm:calcUMKM, roster:()=>recalcTotals()};
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    const id=tab.dataset.tab;
+    document.getElementById(id).classList.add('active');
+    Object.keys(lastVal).forEach(k=>{ if(['k_big','f_big','p_big','u_big'].includes(k)) delete lastVal[k]; });
+    calcMap[id]();
+  });
+});
+
+/* ========== Persistence + Roster + Excel ========== */
+const KEY='kalkulatorPajakID.v1';
+function safeSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
+function safeGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
+const sv=(id,v)=>{const e=document.getElementById(id);if(e&&v!=null&&v!=='')e.value=v;};
+function setSeg(group,attr,value){
+  document.querySelectorAll('#'+group+' button').forEach(b=>{
+    const v=attr==='rate'?parseFloat(b.dataset[attr]):b.dataset[attr];
+    b.classList.toggle('on', v===value);
+  });
+}
+
+/* ----- roster data ----- */
+let roster=[];
+const PTKP_OPTS=[['TK/0','TK/0'],['TK/1','TK/1'],['TK/2','TK/2'],['TK/3','TK/3'],['K/0','K/0'],['K/1','K/1'],['K/2','K/2'],['K/3','K/3']];
+const optsHTML=sel=>PTKP_OPTS.map(([v,l])=>`<option value="${v}"${v===sel?' selected':''}>${l}</option>`).join('');
+const esc=s=>(''+(s||'')).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+function calcRow(r){
+  const cat=terCat(r.status), rate=terRate(cat, r.gaji);
+  const pphBln=r.gaji*rate;
+  const brutoThn=r.gaji*12;
+  const bijab=Math.min(brutoThn*0.05,6000000);
+  const pkp=Math.max(0,Math.floor((brutoThn-bijab-PTKP[r.status])/1000)*1000);
+  const pphThn=progressive(pkp).tax;
+  return {cat,rate,pphBln,pphThn,net:r.gaji-pphBln};
+}
+function fillRow(tr){
+  const r=roster[+tr.dataset.i]; if(!r) return;
+  const c=calcRow(r);
+  tr.querySelector('.cat').textContent=c.cat;
+  tr.querySelector('.rate').textContent=pct(c.rate);
+  tr.querySelector('.pphb').textContent=idr(c.pphBln);
+  tr.querySelector('.pphy').textContent=idr(c.pphThn);
+}
+function recalcTotals(){
+  let b=0,pb=0,py=0;
+  roster.forEach(r=>{const c=calcRow(r);b+=r.gaji;pb+=c.pphBln;py+=c.pphThn;});
+  document.getElementById('r_count').textContent=roster.length;
+  document.getElementById('t_bruto').textContent=idr(b);
+  document.getElementById('t_pphb').textContent=idr(pb);
+  document.getElementById('t_pphy').textContent=idr(py);
+}
+function renderRoster(){
+  const body=document.getElementById('r_body');
+  body.innerHTML=roster.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input class="ri" data-f="nama" value="${esc(r.nama)}" placeholder="Nama"></td>
+      <td><input class="ri" data-f="npwp" value="${esc(r.npwp)}" placeholder="NPWP / NIK"></td>
+      <td><select class="ri rs" data-f="status">${optsHTML(r.status)}</select></td>
+      <td><input class="ri rc" data-f="gaji" inputmode="numeric" value="${(r.gaji||0).toLocaleString('id-ID')}"></td>
+      <td class="c cat"></td><td class="c rate"></td>
+      <td class="c num pphb"></td><td class="c num pphy"></td>
+      <td class="c"><button class="del" title="Hapus">✕</button></td>
+    </tr>`).join('');
+  body.querySelectorAll('tr').forEach(fillRow);
+  document.getElementById('r_table').style.display=roster.length?'table':'none';
+  document.getElementById('r_empty').style.display=roster.length?'none':'block';
+  recalcTotals();
+}
+
+/* roster editing (delegated) */
+const rbody=document.getElementById('r_body');
+rbody.addEventListener('input',e=>{
+  const inp=e.target.closest('.ri'); if(!inp) return;
+  const tr=inp.closest('tr'), i=+tr.dataset.i, f=inp.dataset.f;
+  if(f==='gaji'){ const raw=inp.value.replace(/\D/g,''); inp.value=raw?parseInt(raw).toLocaleString('id-ID'):''; roster[i].gaji=parseInt(raw)||0; }
+  else roster[i][f]=inp.value;
+  fillRow(tr); recalcTotals(); debouncedSave();
+});
+rbody.addEventListener('change',e=>{
+  const sel=e.target.closest('.rs'); if(!sel) return;
+  const tr=sel.closest('tr'); roster[+tr.dataset.i].status=sel.value;
+  fillRow(tr); recalcTotals(); debouncedSave();
+});
+rbody.addEventListener('click',e=>{
+  if(e.target.closest('.del')){ roster.splice(+e.target.closest('tr').dataset.i,1); renderRoster(); saveState(); }
+});
+
+/* toolbar */
+document.getElementById('rb_add').addEventListener('click',()=>{
+  roster.push({nama:'',npwp:'',status:'TK/0',gaji:10000000}); renderRoster(); saveState();
+  const rows=rbody.querySelectorAll('tr'); if(rows.length) rows[rows.length-1].querySelector('input').focus();
+});
+document.getElementById('rb_clear').addEventListener('click',()=>{
+  if(roster.length && !confirm('Hapus semua data karyawan?')) return;
+  roster=[]; renderRoster(); saveState();
+});
+document.getElementById('rb_export').addEventListener('click',exportXlsx);
+document.getElementById('rb_tpl').addEventListener('click',downloadTemplate);
+document.getElementById('rb_import').addEventListener('click',()=>document.getElementById('rb_file').click());
+document.getElementById('rb_file').addEventListener('change',e=>{ if(e.target.files[0]) importXlsx(e.target.files[0]); e.target.value=''; });
+
+/* Excel */
+function noXLSX(){ alert('Fitur Excel butuh koneksi internet untuk memuat pustaka SheetJS. Coba lagi saat online.'); }
+function exportXlsx(){
+  if(!window.XLSX) return noXLSX();
+  const data=roster.map(r=>{const c=calcRow(r);return {
+    'Nama':r.nama,'NPWP/NIK':r.npwp,'Status PTKP':r.status,
+    'Penghasilan Bruto/Bulan':Math.round(r.gaji),'Kategori TER':c.cat,
+    'Tarif TER (%)':+(c.rate*100).toFixed(2),'PPh 21/Bulan':Math.round(c.pphBln),
+    'PPh 21/Tahun':Math.round(c.pphThn),'Take Home/Bulan':Math.round(c.net)};});
+  if(!data.length) data.push({'Nama':'','NPWP/NIK':'','Status PTKP':'','Penghasilan Bruto/Bulan':'','Kategori TER':'','Tarif TER (%)':'','PPh 21/Bulan':'','PPh 21/Tahun':'','Take Home/Bulan':''});
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws['!cols']=[{wch:22},{wch:18},{wch:11},{wch:21},{wch:12},{wch:12},{wch:15},{wch:15},{wch:16}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Rekap PPh21');
+  XLSX.writeFile(wb,'rekap-pph21.xlsx');
+}
+function downloadTemplate(){
+  if(!window.XLSX) return noXLSX();
+  const ws=XLSX.utils.json_to_sheet([
+    {'Nama':'Budi Santoso','NPWP/NIK':'3173xxxxxxxxxxxx','Status PTKP':'K/1','Penghasilan Bruto/Bulan':12000000},
+    {'Nama':'Siti Aminah','NPWP/NIK':'3174xxxxxxxxxxxx','Status PTKP':'TK/0','Penghasilan Bruto/Bulan':8000000}
+  ]);
+  ws['!cols']=[{wch:22},{wch:20},{wch:12},{wch:22}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Template');
+  XLSX.writeFile(wb,'template-karyawan.xlsx');
+}
+function importXlsx(file){
+  if(!window.XLSX) return noXLSX();
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      const json=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      let added=0;
+      json.forEach(row=>{
+        const get=(...keys)=>{for(const k in row){const kl=(''+k).toLowerCase();if(keys.some(x=>kl.includes(x)))return row[k];}return '';};
+        const nama=(''+get('nama','name')).trim();
+        const npwp=(''+get('npwp','nik')).trim();
+        let status=(''+get('status','ptkp')).toUpperCase().replace(/\s/g,'');
+        if(!PTKP[status]) status='TK/0';
+        const gaji=parseInt((''+get('bruto','gaji','penghasilan','salary')).replace(/[^\d]/g,''))||0;
+        if(nama||gaji){ roster.push({nama,npwp,status,gaji}); added++; }
+      });
+      renderRoster(); saveState();
+      alert(added?`Berhasil mengimpor ${added} karyawan.`:'Tidak ada baris dikenali. Pastikan ada kolom Nama / Status PTKP / Penghasilan Bruto.');
+    }catch(err){ alert('Gagal membaca file. Pastikan format .xlsx atau .csv yang benar.'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ----- save / load everything ----- */
+function saveState(){
+  const ok=safeSet(KEY, JSON.stringify({
+    k:{gaji:gv('k_gaji'),thr:gv('k_thr'),iuran:gv('k_iuran'),ptkp:gv('k_ptkp')},
+    f:{bruto:gv('f_bruto')},
+    p:{harga:gv('p_harga'),rate:ppnRate,dir:ppnDir},
+    u:{omzet:gv('u_omzet'),op:umkmOP},
+    roster
+  }));
+  const s=document.getElementById('rb_saved'); if(s) s.style.opacity=ok?'1':'.35';
+}
+function loadState(){
+  const raw=safeGet(KEY); if(!raw) return;
+  try{
+    const s=JSON.parse(raw);
+    if(s.k){ sv('k_gaji',s.k.gaji); sv('k_thr',s.k.thr); sv('k_iuran',s.k.iuran); if(s.k.ptkp)sv('k_ptkp',s.k.ptkp); }
+    if(s.f) sv('f_bruto',s.f.bruto);
+    if(s.p){ sv('p_harga',s.p.harga); if(s.p.rate){ppnRate=s.p.rate;setSeg('p_mode','rate',ppnRate);} if(s.p.dir){ppnDir=s.p.dir;setSeg('p_dir','dir',ppnDir);} }
+    if(s.u){ sv('u_omzet',s.u.omzet); umkmOP=!!s.u.op; document.getElementById('u_op').classList.toggle('on',umkmOP); }
+    if(Array.isArray(s.roster)) roster=s.roster.map(r=>({nama:r.nama||'',npwp:r.npwp||'',status:PTKP[r.status]?r.status:'TK/0',gaji:+r.gaji||0}));
+  }catch(e){}
+}
+let _saveT;
+function debouncedSave(){ clearTimeout(_saveT); _saveT=setTimeout(saveState,400); }
+function attachAutoSave(){ ['input','change','click'].forEach(ev=>document.addEventListener(ev,debouncedSave)); }
+
+/* initial */
+loadState();
+renderRoster();
+calcKaryawan(); calcFreelance(); calcPPN(); calcUMKM();
+attachAutoSave();
+</script>
+</body>
+</html>
